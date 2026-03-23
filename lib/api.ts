@@ -93,13 +93,18 @@ export async function apiCall<T = unknown>(
     }
   }
 
+  console.log('[v0] API Call:', { endpoint, method: options.method || 'GET', url });
+  
   let response = await fetch(url, {
     ...fetchOptions,
     headers,
   });
 
+  console.log('[v0] API Response:', { endpoint, status: response.status });
+
   // Handle 401 by refreshing token and retrying once
   if (response.status === 401 && !skipAuth) {
+    console.log('[v0] Got 401, attempting token refresh');
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       const newToken = getAccessToken();
@@ -109,6 +114,7 @@ export async function apiCall<T = unknown>(
           ...fetchOptions,
           headers,
         });
+        console.log('[v0] Retry after refresh:', { status: response.status });
       }
     }
   }
@@ -116,6 +122,7 @@ export async function apiCall<T = unknown>(
   const data = (await response.json()) as ApiResponse<T>;
 
   if (!response.ok) {
+    console.log('[v0] API Error:', { status: response.status, data });
     const error = new Error(data.message || 'API request failed');
     (error as any).status = response.status;
     (error as any).data = data;

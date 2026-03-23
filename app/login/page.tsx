@@ -51,17 +51,20 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
+      console.log('[v0] Login attempt with email:', email);
       const data = await post<LoginResponse>('/auth/login', {
         email,
         password,
       });
 
+      console.log('[v0] Login successful, received tokens:', !!data.tokens);
       // Store tokens
       setTokens(data.tokens);
 
       // Validate role
       const allowedRoles = ['admin', 'moderator', 'support', 'analyst'];
       if (!allowedRoles.includes(data.user.role)) {
+        console.log('[v0] User role not allowed:', data.user.role);
         toast({
           title: 'Access Denied',
           description: 'Your account does not have admin access',
@@ -70,6 +73,7 @@ export default function LoginPage() {
         return;
       }
 
+      console.log('[v0] Role validated, redirecting to dashboard');
       toast({
         title: 'Success',
         description: `Welcome back, ${data.user.firstName}!`,
@@ -77,7 +81,13 @@ export default function LoginPage() {
 
       router.push('/dashboard');
     } catch (error: any) {
-      const message = error?.data?.message || 'Login failed. Please check your credentials.';
+      console.log('[v0] Login error:', {
+        status: error?.status,
+        message: error?.message,
+        data: error?.data,
+        fullError: error,
+      });
+      const message = error?.data?.message || error?.message || 'Login failed. Please check your credentials.';
       toast({
         title: 'Login Failed',
         description: message,
