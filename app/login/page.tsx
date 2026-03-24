@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,10 +15,11 @@ interface LoginResponse {
   access: string;
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -40,19 +41,16 @@ export default function LoginPage() {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
     if (!email) {
       newErrors.email = 'Email is required';
     } else if (!isValidEmail(email)) {
       newErrors.email = 'Please enter a valid email';
     }
-
     if (!password) {
       newErrors.password = 'Password is required';
     } else if (password.length < 4) {
       newErrors.password = 'Password must be at least 4 characters';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -65,6 +63,7 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
+
     try {
       console.log('[v0] Login attempt with email:', email);
       const data = await post<LoginResponse>(
@@ -76,32 +75,35 @@ export default function LoginPage() {
         { skipAuth: true }
       );
 
-      console.log('[v0] Login successful, received tokens:', data);
-      // Store tokens
-      setTokens({
+      console.log('[v0] Login successful, setting tokens');
+      
+      const tokens: AuthTokens = {
         accessToken: data.access,
         refreshToken: data.refresh,
-      });
+      };
+      
+      setTokens(tokens);
 
-      console.log('[v0] Tokens stored, redirecting to dashboard');
       toast({
-        title: 'Success',
-        description: 'Welcome back!',
+        title: 'Login Successful',
+        description: 'Welcome back to the admin dashboard.',
       });
 
-      router.push('/dashboard/');
+      console.log('[v0] Redirecting to dashboard');
+      router.push('/dashboard');
     } catch (error: any) {
-      console.log('[v0] Login error:', {
-        status: error?.status,
-        message: error?.message,
-        data: error?.data,
-        fullError: error,
-      });
-      const message = error?.data?.message || error?.message || 'Login failed. Please check your credentials.';
+      console.error('[v0] Login failed:', error);
+      
+      const errorMessage = error.message || 'Invalid email or password. Please try again.';
+      
       toast({
         title: 'Login Failed',
-        description: message,
+        description: errorMessage,
         variant: 'destructive',
+      });
+      
+      setErrors({
+        submit: errorMessage
       });
     } finally {
       setIsLoading(false);
@@ -109,15 +111,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900">Kerya Admin</h1>
-            <p className="text-gray-600 mt-2">Sign in to your admin account</p>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <div className="w-16 h-16 bg-amber-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span className="text-white text-2xl font-bold">K</span>
           </div>
+        </div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Kerya Admin
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Sign in to manage the platform
+        </p>
+      </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <Card className="py-8 px-4 shadow sm:rounded-lg sm:px-10 border-0">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {errors.submit && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-4">
+                <div className="flex">
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{errors.submit}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -183,5 +204,19 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+          Loading login...
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
