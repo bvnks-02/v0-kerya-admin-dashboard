@@ -80,9 +80,30 @@ export default function UsersPage() {
       ),
     },
     {
+      key: 'is_email_verified',
+      label: 'Email Verified',
+      render: (is_email_verified) => (
+        <Badge variant={is_email_verified ? 'default' : 'outline'}>
+          {is_email_verified ? '✓ Verified' : 'Not Verified'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'is_phone_verified',
+      label: 'Phone Verified',
+      render: (is_phone_verified) => (
+        <Badge variant={is_phone_verified ? 'default' : 'outline'}>
+          {is_phone_verified ? '✓ Verified' : 'Not Verified'}
+        </Badge>
+      ),
+    },
+    {
       key: 'rating',
       label: 'Rating',
-      render: (rating) => `${rating}/5 (${(rating || 0).toFixed(1)})`,
+      render: (rating, row) => {
+        const user = row as AdminUser;
+        return `${(rating || 0).toFixed(1)}/5 (${user.rating_count} reviews)`;
+      },
     },
     {
       key: 'created_at',

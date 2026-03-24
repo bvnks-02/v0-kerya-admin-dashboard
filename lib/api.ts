@@ -1,4 +1,4 @@
-import { ApiResponse, AuthTokens } from './types';
+import { ApiResponse, AuthTokens, AdminUserStats } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://app.alpha.openscaler.net:9281/api/v1';
 
@@ -310,4 +310,9 @@ export async function demoteToGuest<T = unknown>(userId: number): Promise<T> {
 
 export async function getUserStats<T = unknown>(): Promise<T> {
   return get<T>(`/admin/users/stats/`);
+}
+
+// Dashboard stats - uses user stats as primary data source
+export async function getDashboardStats(): Promise<AdminUserStats> {
+  return getUserStats<AdminUserStats>();
 }

@@ -67,10 +67,14 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       console.log('[v0] Login attempt with email:', email);
-      const data = await post<LoginResponse>('/auth/login/email/', {
-        email,
-        password,
-      });
+      const data = await post<LoginResponse>(
+        '/auth/login/email/',
+        {
+          email,
+          password,
+        },
+        { skipAuth: true }
+      );
 
       console.log('[v0] Login successful, received tokens:', data);
       // Store tokens
