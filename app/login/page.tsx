@@ -1,7 +1,7 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { FormEvent, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -17,11 +17,26 @@ interface LoginResponse {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Check for session expiration on mount
+  useEffect(() => {
+    const sessionExpired = searchParams.get('session') === 'expired';
+    if (sessionExpired) {
+      toast({
+        title: 'Session Expired',
+        description: 'Your session has expired. Please log in again.',
+        variant: 'destructive',
+      });
+      // Clean up URL
+      window.history.replaceState({}, document.title, '/login');
+    }
+  }, [searchParams, toast]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
