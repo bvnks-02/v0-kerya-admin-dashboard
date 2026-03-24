@@ -23,7 +23,7 @@ export default function BudgetPostsPage() {
   const fetchPosts = async () => {
     try {
       setIsLoading(true);
-      const data = await get<BudgetPost[]>('/budget-posts');
+      const data = await get<BudgetPost[]>('/budget-posts/');
       setPosts(data);
     } catch (error) {
       toast({

@@ -22,7 +22,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const data = await get<User[]>(`/users?page=${page}`);
+      const data = await get<User[]>(`/users/?page=${page}`);
       setUsers(data);
     } catch (error) {
       toast({

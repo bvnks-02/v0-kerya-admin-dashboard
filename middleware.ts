@@ -7,26 +7,26 @@ export function middleware(request: NextRequest) {
   // Protect dashboard routes
   if (pathname.startsWith('/dashboard')) {
     if (!accessToken) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/login/', request.url));
     }
   }
 
   // Redirect authenticated users away from login page
-  if (pathname === '/login' && accessToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (pathname === '/login/' && accessToken) {
+    return NextResponse.redirect(new URL('/dashboard/', request.url));
   }
 
   // Redirect root to dashboard or login
   if (pathname === '/') {
     if (accessToken) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/dashboard/', request.url));
     }
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/login/', request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/', '/login', '/dashboard/:path*'],
+  matcher: ['/', '/login', '/login/', '/dashboard/:path*'],
 };

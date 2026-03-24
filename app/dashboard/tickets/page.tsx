@@ -24,7 +24,7 @@ export default function TicketsPage() {
   const fetchTickets = async () => {
     try {
       setIsLoading(true);
-      const data = await get<Ticket[]>('/tickets');
+      const data = await get<Ticket[]>('/tickets/');
       setTickets(data);
     } catch (error) {
       toast({

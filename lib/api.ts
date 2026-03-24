@@ -18,6 +18,9 @@ export function setTokens(tokens: AuthTokens) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('accessToken', tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);
+    // Also set cookies for middleware
+    document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=3600`;
+    document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800`;
   }
 }
 
@@ -27,6 +30,9 @@ export function clearTokens() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    // Also clear cookies
+    document.cookie = 'accessToken=; path=/; max-age=0';
+    document.cookie = 'refreshToken=; path=/; max-age=0';
   }
 }
 
@@ -50,7 +56,7 @@ async function refreshAccessToken(): Promise<boolean> {
   if (!token) return false;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -119,17 +125,24 @@ export async function apiCall<T = unknown>(
     }
   }
 
-  const data = (await response.json()) as ApiResponse<T>;
+  const responseData = (await response.json()) as ApiResponse<T> | T;
 
   if (!response.ok) {
-    console.log('[v0] API Error:', { status: response.status, data });
-    const error = new Error(data.message || 'API request failed');
+    console.log('[v0] API Error:', { status: response.status, responseData });
+    const errorMessage = typeof responseData === 'object' && responseData !== null && 'message' in responseData 
+      ? (responseData as any).message 
+      : 'API request failed';
+    const error = new Error(errorMessage);
     (error as any).status = response.status;
-    (error as any).data = data;
+    (error as any).data = responseData;
     throw error;
   }
 
-  return data.data as T;
+  // Handle both wrapped response { data: T } and direct response T
+  if (responseData && typeof responseData === 'object' && 'data' in responseData) {
+    return (responseData as ApiResponse<T>).data as T;
+  }
+  return responseData as T;
 }
 
 // Convenience methods

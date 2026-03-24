@@ -63,19 +63,32 @@ export interface Listing {
   updatedAt: string;
 }
 
+// User Mini Type
+export interface UserMini {
+  id: string;
+  username: string;
+  email: string;
+  rating: number;
+  profile_picture?: string;
+}
+
 // Booking Types
 export interface Booking {
   id: string;
-  listingId: string;
-  guestId: string;
-  hostId: string;
-  checkIn: string;
-  checkOut: string;
-  totalPrice: number;
+  listing: Listing;
+  guest: UserMini;
+  host: UserMini;
+  start_date: string;
+  end_date: string;
+  nights: string;
+  price_total: number;
   currency: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  decision_at?: string;
+  cancelled_at?: string;
+  updated_at: string;
+  is_active: boolean;
 }
 
 // Budget Post Types

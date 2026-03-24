@@ -36,7 +36,7 @@ export default function HostRequestsPage() {
   const fetchRequests = async () => {
     try {
       setIsLoading(true);
-      const data = await get<HostRequest[]>('/host-requests');
+      const data = await get<HostRequest[]>('/host-requests/');
       setRequests(data);
     } catch (error) {
       toast({
@@ -62,7 +62,7 @@ export default function HostRequestsPage() {
 
     setIsProcessing(true);
     try {
-      await patch(`/host-requests/${confirmDialog.requestId}`, {
+      await patch(`/host-requests/${confirmDialog.requestId}/`, {
         status: confirmDialog.action === 'approve' ? 'approved' : 'rejected',
       });
 

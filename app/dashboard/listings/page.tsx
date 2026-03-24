@@ -24,7 +24,7 @@ export default function ListingsPage() {
   const fetchListings = async () => {
     try {
       setIsLoading(true);
-      const data = await get<Listing[]>(`/listings?page=${page}`);
+      const data = await get<Listing[]>(`/listings/?page=${page}`);
       setListings(data);
     } catch (error) {
       toast({

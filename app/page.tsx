@@ -10,9 +10,9 @@ export default function Home() {
   useEffect(() => {
     const token = getAccessToken();
     if (token) {
-      router.push('/dashboard');
+      router.push('/dashboard/');
     } else {
-      router.push('/login');
+      router.push('/login/');
     }
   }, [router]);
 

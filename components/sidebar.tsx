@@ -19,13 +19,13 @@ import { cn } from '@/lib/utils';
 import { clearTokens } from '@/lib/api';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Host Requests', href: '/dashboard/host-requests', icon: Zap },
-  { name: 'Listings', href: '/dashboard/listings', icon: FileText },
-  { name: 'Bookings', href: '/dashboard/bookings', icon: BarChart3 },
-  { name: 'Budget Posts', href: '/dashboard/budget-posts', icon: MessageSquare },
-  { name: 'Support Tickets', href: '/dashboard/tickets', icon: FileText },
-  { name: 'Users', href: '/dashboard/users', icon: Users },
+  { name: 'Dashboard', href: '/dashboard/', icon: Home },
+  { name: 'Host Requests', href: '/dashboard/host-requests/', icon: Zap },
+  { name: 'Listings', href: '/dashboard/listings/', icon: FileText },
+  { name: 'Bookings', href: '/dashboard/bookings/', icon: BarChart3 },
+  { name: 'Budget Posts', href: '/dashboard/budget-posts/', icon: MessageSquare },
+  { name: 'Support Tickets', href: '/dashboard/tickets/', icon: FileText },
+  { name: 'Users', href: '/dashboard/users/', icon: Users },
 ];
 
 export function Sidebar() {
@@ -35,11 +35,11 @@ export function Sidebar() {
 
   const handleLogout = () => {
     clearTokens();
-    router.push('/login');
+    router.push('/login/');
   };
 
   const NavLink = ({ href, name, icon: Icon }: (typeof navigation)[0]) => {
-    const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
+    const isActive = pathname === href || (href !== '/dashboard/' && pathname.startsWith(href));
     return (
       <Link
         href={href}

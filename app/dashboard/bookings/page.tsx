@@ -23,7 +23,7 @@ export default function BookingsPage() {
   const fetchBookings = async () => {
     try {
       setIsLoading(true);
-      const data = await get<Booking[]>('/bookings');
+      const data = await get<Booking[]>('/booking/admin/?include_inactive=false');
       setBookings(data);
     } catch (error) {
       toast({
@@ -47,24 +47,33 @@ export default function BookingsPage() {
       render: (id) => `#${String(id).slice(0, 8)}`,
     },
     {
-      key: 'listingId',
+      key: 'listing',
       label: 'Listing',
-      render: (id) => `Listing ${String(id).slice(0, 8)}`,
+      render: (listing) => listing.title,
     },
     {
-      key: 'checkIn',
+      key: 'start_date',
       label: 'Check-in',
       render: (date) => formatDate(date),
     },
     {
-      key: 'checkOut',
+      key: 'end_date',
       label: 'Check-out',
       render: (date) => formatDate(date),
     },
     {
-      key: 'totalPrice',
+      key: 'nights',
+      label: 'Nights',
+    },
+    {
+      key: 'price_total',
       label: 'Total',
       render: (price, item) => formatCurrency(price, item.currency),
+    },
+    {
+      key: 'guest',
+      label: 'Guest',
+      render: (guest) => guest.username,
     },
     {
       key: 'status',

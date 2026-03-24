@@ -11,8 +11,8 @@ import { AuthTokens, User } from '@/lib/types';
 import { isValidEmail } from '@/lib/format';
 
 interface LoginResponse {
-  user: User;
-  tokens: AuthTokens;
+  refresh: string;
+  access: string;
 }
 
 export default function LoginPage() {
@@ -52,34 +52,25 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       console.log('[v0] Login attempt with email:', email);
-      const data = await post<LoginResponse>('/auth/login', {
+      const data = await post<LoginResponse>('/auth/login/email/', {
         email,
         password,
       });
 
-      console.log('[v0] Login successful, received tokens:', !!data.tokens);
+      console.log('[v0] Login successful, received tokens:', data);
       // Store tokens
-      setTokens(data.tokens);
-
-      // Validate role
-      const allowedRoles = ['admin', 'moderator', 'support', 'analyst'];
-      if (!allowedRoles.includes(data.user.role)) {
-        console.log('[v0] User role not allowed:', data.user.role);
-        toast({
-          title: 'Access Denied',
-          description: 'Your account does not have admin access',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      console.log('[v0] Role validated, redirecting to dashboard');
-      toast({
-        title: 'Success',
-        description: `Welcome back, ${data.user.firstName}!`,
+      setTokens({
+        accessToken: data.access,
+        refreshToken: data.refresh,
       });
 
-      router.push('/dashboard');
+      console.log('[v0] Tokens stored, redirecting to dashboard');
+      toast({
+        title: 'Success',
+        description: 'Welcome back!',
+      });
+
+      router.push('/dashboard/');
     } catch (error: any) {
       console.log('[v0] Login error:', {
         status: error?.status,
