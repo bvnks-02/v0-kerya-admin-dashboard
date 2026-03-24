@@ -140,12 +140,12 @@ export default function TicketsPage() {
     {
       key: 'ticketType',
       label: 'Ticket Type',
-      render: (ticketType) => ticketType.name,
+      render: (ticketType) => ticketType?.name || '—',
     },
     {
       key: 'price',
       label: 'Price',
-      render: (price, item) => formatCurrency(price, item.ticketType.currency),
+      render: (price, item) => formatCurrency(price, item.ticketType?.currency || 'USD'),
     },
     {
       key: 'status',

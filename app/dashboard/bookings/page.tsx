@@ -49,7 +49,7 @@ export default function BookingsPage() {
     {
       key: 'listing',
       label: 'Listing',
-      render: (listing) => listing.title,
+      render: (listing) => listing?.title || '—',
     },
     {
       key: 'start_date',
@@ -73,7 +73,7 @@ export default function BookingsPage() {
     {
       key: 'guest',
       label: 'Guest',
-      render: (guest) => guest.username,
+      render: (guest) => guest?.username || '—',
     },
     {
       key: 'status',

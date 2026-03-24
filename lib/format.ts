@@ -80,7 +80,8 @@ export function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function truncate(text: string, length: number = 50): string {
+export function truncate(text: string | null | undefined, length: number = 50): string {
+  if (!text) return '';
   return text.length > length ? text.slice(0, length) + '...' : text;
 }
 
