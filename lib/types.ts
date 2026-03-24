@@ -107,16 +107,29 @@ export interface BudgetPost {
 }
 
 // Support Ticket Types
+export interface TicketType {
+  id: string;
+  event: string;
+  name: string;
+  price: number;
+  currency: string;
+}
+
 export interface Ticket {
   id: string;
-  title: string;
-  description: string;
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  userId: string;
-  assignedTo?: string;
+  user: string;
+  ticketType: TicketType;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  ticketNumber: string;
+  qrCode: string;
+  status: 'valid' | 'used' | 'expired';
+  price: number;
   createdAt: string;
-  updatedAt: string;
+  usedAt: string | null;
+  canBeUsed: boolean;
 }
 
 // Dashboard Stats
