@@ -35,7 +35,7 @@ export default function ListingsPage() {
   const fetchListings = async () => {
     try {
       setIsLoading(true);
-      const data = await get<Listing[]>(`/listings/pending/?page=${page}`);
+      const data = await get<Listing[]>(`/listings/?page=${page}`);
       setListings(data);
     } catch (error) {
       toast({
@@ -102,18 +102,28 @@ export default function ListingsPage() {
       label: 'Title',
     },
     {
-      key: 'location',
+      key: 'type',
+      label: 'Type',
+    },
+    {
+      key: 'wilaya',
       label: 'Location',
+      render: (wilaya, item) => `${item.municipality}, ${wilaya}`,
     },
     {
-      key: 'bedrooms',
-      label: 'Beds/Baths',
-      render: (_, item) => `${item.bedrooms}/${item.bathrooms}`,
+      key: 'detail',
+      label: 'Rooms/Baths',
+      render: (_, item) => `${item.detail?.rooms || 0}/${item.detail?.bathrooms || 0}`,
     },
     {
-      key: 'price',
-      label: 'Price',
-      render: (price, item) => formatCurrency(price, item.currency),
+      key: 'capacity',
+      label: 'Capacity',
+      render: (capacity) => `${capacity} guests`,
+    },
+    {
+      key: 'detail',
+      label: 'Price/Night',
+      render: (_, item) => formatCurrency(item.detail?.price_per_night || 0, 'DZD'),
     },
     {
       key: 'status',
@@ -121,7 +131,7 @@ export default function ListingsPage() {
       render: (status) => <StatusBadge status={status} />,
     },
     {
-      key: 'createdAt',
+      key: 'created_at',
       label: 'Created',
       render: (date) => formatDate(date),
     },
@@ -131,8 +141,8 @@ export default function ListingsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Pending Listings</h1>
-          <p className="text-gray-600 mt-1">Review and approve property listings</p>
+          <h1 className="text-3xl font-bold text-gray-900">Listings</h1>
+          <p className="text-gray-600 mt-1">Review and manage all property listings</p>
         </div>
 
         <Tabs defaultValue="all" onValueChange={(val) => setStatusFilter(val as any)}>

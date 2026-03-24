@@ -47,17 +47,28 @@ export default function BudgetPostsPage() {
       render: (title) => truncate(title, 40),
     },
     {
-      key: 'budget',
-      label: 'Budget',
+      key: 'guest',
+      label: 'Guest',
+      render: (_, item) => item.guest?.username || '—',
+    },
+    {
+      key: 'wilaya',
+      label: 'Location',
+      render: (wilaya, item) => `${item.municipality}, ${wilaya}`,
+    },
+    {
+      key: 'nights',
+      label: 'Nights',
+    },
+    {
+      key: 'budget_per_night',
+      label: 'Budget/Night',
       render: (budget, item) => formatCurrency(budget, item.currency),
     },
     {
-      key: 'category',
-      label: 'Category',
-    },
-    {
-      key: 'responses',
-      label: 'Responses',
+      key: 'budget_min',
+      label: 'Budget Range',
+      render: (min, item) => `${formatCurrency(min, item.currency)} - ${formatCurrency(item.budget_max, item.currency)}`,
     },
     {
       key: 'status',
@@ -65,7 +76,7 @@ export default function BudgetPostsPage() {
       render: (status) => <StatusBadge status={status} />,
     },
     {
-      key: 'createdAt',
+      key: 'created_at',
       label: 'Posted',
       render: (date) => formatDate(date),
     },

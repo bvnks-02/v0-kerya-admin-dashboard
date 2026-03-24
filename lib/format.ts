@@ -58,7 +58,8 @@ export function formatRelativeTime(date: string | Date): string {
 }
 
 // Phone formatting (Algerian)
-export function formatPhoneNumber(phone: string): string {
+export function formatPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) return '—';
   const cleaned = phone.replace(/\D/g, '');
   if (cleaned.length === 9) {
     // 123456789 → +213 123 456 789

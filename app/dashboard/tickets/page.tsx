@@ -93,8 +93,8 @@ export default function TicketsPage() {
             ? {
                 ...ticket,
                 status: confirmDialog.action === 'use' ? 'used' : confirmDialog.action === 'expire' ? 'expired' : 'valid',
-                usedAt: confirmDialog.action === 'use' ? new Date().toISOString() : ticket.usedAt,
-                canBeUsed: confirmDialog.action === 'expire' ? false : confirmDialog.action === 'validate' ? true : ticket.canBeUsed,
+                used_at: confirmDialog.action === 'use' ? new Date().toISOString() : ticket.used_at,
+                can_be_used: confirmDialog.action === 'expire' ? false : confirmDialog.action === 'validate' ? true : ticket.can_be_used,
               }
             : ticket
         )
@@ -123,14 +123,14 @@ export default function TicketsPage() {
 
   const columns: Column<Ticket>[] = [
     {
-      key: 'ticketNumber',
+      key: 'ticket_number',
       label: 'Ticket Number',
       render: (number) => truncate(number, 20),
     },
     {
-      key: 'firstName',
+      key: 'first_name',
       label: 'Name',
-      render: (_, item) => `${item.firstName} ${item.lastName}`,
+      render: (_, item) => `${item.first_name} ${item.last_name}`,
     },
     {
       key: 'email',
@@ -138,14 +138,19 @@ export default function TicketsPage() {
       render: (email) => truncate(email, 30),
     },
     {
-      key: 'ticketType',
-      label: 'Ticket Type',
+      key: 'phone',
+      label: 'Phone',
+      render: (phone) => truncate(phone, 20),
+    },
+    {
+      key: 'ticket_type',
+      label: 'Event Ticket',
       render: (ticketType) => ticketType?.name || '—',
     },
     {
       key: 'price',
       label: 'Price',
-      render: (price, item) => formatCurrency(price, item.ticketType?.currency || 'USD'),
+      render: (price, item) => formatCurrency(price, item.ticket_type?.currency || 'DZD'),
     },
     {
       key: 'status',
@@ -153,7 +158,7 @@ export default function TicketsPage() {
       render: (status) => <StatusBadge status={status} />,
     },
     {
-      key: 'createdAt',
+      key: 'created_at',
       label: 'Created',
       render: (date) => formatDate(date),
     },

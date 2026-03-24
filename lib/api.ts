@@ -82,38 +82,40 @@ function redirectToLogin() {
 async function refreshAccessToken(): Promise<boolean> {
   const token = getRefreshToken();
   if (!token) {
+    console.log('[v0] No refresh token available. Cannot refresh.');
     redirectToLogin();
     return false;
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
+    console.log('[v0] Attempting to refresh access token...');
+    const response = await fetch(`${API_BASE_URL}/auth/refresh-token/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
+      body: JSON.stringify({ refresh: token }),
     });
 
     if (!response.ok) {
-      console.log('[v0] Token refresh failed. Redirecting to login.');
-      redirectToLogin();
+      console.log('[v0] Token refresh failed with status:', response.status);
       return false;
     }
 
-    const data = (await response.json()) as ApiResponse<AuthTokens>;
-    if (data.data) {
-      setTokens(data.data);
+    const data = (await response.json()) as { access: string; refresh: string };
+    if (data.access && data.refresh) {
+      setTokens({
+        accessToken: data.access,
+        refreshToken: data.refresh,
+      });
       console.log('[v0] Token refreshed successfully');
       return true;
     }
     
-    console.log('[v0] Token refresh returned invalid data. Redirecting to login.');
-    redirectToLogin();
+    console.log('[v0] Token refresh returned invalid data.');
     return false;
   } catch (error) {
     console.log('[v0] Token refresh error:', error);
-    redirectToLogin();
     return false;
   }
 }
@@ -165,8 +167,11 @@ export async function apiCall<T = unknown>(
         console.log('[v0] Retrying request with new token');
         return apiCall<T>(endpoint, options, retries - 1);
       }
+    } else {
+      // Refresh failed, now redirect to login
+      console.log('[v0] Token refresh failed. Redirecting to login.');
+      redirectToLogin();
     }
-    // If refresh failed, redirectToLogin was already called, so just throw
   }
 
   if (!response.ok) {

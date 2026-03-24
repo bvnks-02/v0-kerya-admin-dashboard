@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HostRequest } from '@/lib/types';
 import { get, patch } from '@/lib/api';
-import { formatDate, formatPhoneNumber } from '@/lib/format';
+import { formatDate, formatPhoneNumber, truncate } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 
 export default function HostRequestsPage() {
@@ -100,22 +100,24 @@ export default function HostRequestsPage() {
 
   const columns: Column<HostRequest>[] = [
     {
-      key: 'firstName',
-      label: 'Name',
-      render: (_, item) => `${item.firstName} ${item.lastName}`,
+      key: 'user',
+      label: 'User',
+      render: (_, item) => item.user?.username || '—',
     },
     {
-      key: 'email',
+      key: 'user',
       label: 'Email',
+      render: (_, item) => item.user?.email || '—',
     },
     {
-      key: 'phone',
-      label: 'Phone',
-      render: (phone) => formatPhoneNumber(phone),
+      key: 'user',
+      label: 'Rating',
+      render: (_, item) => `${(item.user?.rating || 0).toFixed(1)}/5`,
     },
     {
-      key: 'wilaya',
-      label: 'Wilaya',
+      key: 'message',
+      label: 'Message',
+      render: (message) => truncate(message, 50),
     },
     {
       key: 'status',
@@ -123,9 +125,14 @@ export default function HostRequestsPage() {
       render: (status) => <StatusBadge status={status} />,
     },
     {
-      key: 'createdAt',
-      label: 'Date',
+      key: 'created_at',
+      label: 'Requested',
       render: (date) => formatDate(date),
+    },
+    {
+      key: 'approved_at',
+      label: 'Approved',
+      render: (date) => (date ? formatDate(date) : '—'),
     },
   ];
 

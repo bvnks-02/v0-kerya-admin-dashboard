@@ -69,39 +69,60 @@ export interface LoginRequest {
 }
 
 // Host Request Types
-export interface HostRequest {
-  id: string;
-  firstName: string;
-  lastName: string;
+export interface HostUser {
+  id: number;
+  username: string;
   email: string;
-  phone: string;
-  city: string;
-  wilaya: string;
-  birthDate: string;
-  cinNumber: string;
+  rating: number;
+  profile_picture: string;
+}
+
+export interface HostRequest {
+  id: number;
+  user: HostUser;
+  message: string;
   status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-  updatedAt: string;
+  approved_by: number | null;
+  approved_at: string | null;
+  created_at: string;
 }
 
 // Listing Types
+export interface ListingDetail {
+  house_type: string;
+  rooms: number;
+  bathrooms: number;
+  furnished: boolean;
+  amenities: string[];
+  rules: string[];
+  price_per_night: number;
+  min_stay: number;
+  contract_required: string;
+  check_in_time: string;
+  check_out_time: string;
+  contact_phone: string;
+  secondary_phone: string | null;
+}
+
 export interface Listing {
   id: string;
+  owner: number;
+  type: string;
   title: string;
+  slug: string;
   description: string;
-  price: number;
-  currency: string;
-  location: string;
   wilaya: string;
-  bedrooms: number;
-  bathrooms: number;
-  area: number;
-  amenities: string[];
-  images: string[];
-  hostId: string;
+  municipality: string;
+  postal_code: string;
+  lat: number;
+  lng: number;
   status: 'active' | 'inactive' | 'pending';
-  createdAt: string;
-  updatedAt: string;
+  capacity: number;
+  media: any[];
+  availabilities: any[];
+  detail: ListingDetail;
+  created_at: string;
+  updated_at: string;
 }
 
 // User Mini Type
@@ -133,44 +154,67 @@ export interface Booking {
 }
 
 // Budget Post Types
+export interface BudgetGuest {
+  id: number;
+  username: string;
+  email: string;
+  rating: number;
+  profile_picture: string;
+}
+
 export interface BudgetPost {
   id: string;
+  guest: BudgetGuest;
+  winning_host: number | null;
   title: string;
-  budget: number;
+  budget_min: number;
+  budget_max: number;
+  budget_per_night: number;
+  final_agreed_price: number | null;
   currency: string;
-  description: string;
-  category: string;
+  nights: number;
+  notes: string;
+  wilaya: string;
+  municipality: string;
   status: 'active' | 'closed';
-  authorId: string;
-  responses: number;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
 }
 
 // Support Ticket Types
-export interface TicketType {
+export interface EventTicketType {
   id: string;
   event: string;
   name: string;
+  description?: string;
   price: number;
   currency: string;
+  total_quantity: number;
+  available_quantity: number;
+  max_per_user?: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  is_available: boolean;
+  sold_quantity: number;
 }
 
 export interface Ticket {
   id: string;
-  user: string;
-  ticketType: TicketType;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  ticketNumber: string;
-  qrCode: string;
+  user: number;
+  ticket_type: EventTicketType;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  phone?: string;
+  ticket_number: string;
+  qr_code: string;
   status: 'valid' | 'used' | 'expired';
   price: number;
-  createdAt: string;
-  usedAt: string | null;
-  canBeUsed: boolean;
+  created_at: string;
+  used_at: string | null;
+  can_be_used: boolean;
 }
 
 // Dashboard Stats
