@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { DataTable, Column } from '@/components/data-table';
 import { StatusBadge } from '@/components/status-badge';
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Listing } from '@/lib/types';
-import { get } from '@/lib/api';
+import { get, updateListingStatus } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,6 +17,16 @@ export default function ListingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'pending'>('all');
   const [page, setPage] = useState(1);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    action: 'approve' | 'reject' | null;
+    listingId: string | null;
+  }>({
+    open: false,
+    action: null,
+    listingId: null,
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     fetchListings();
@@ -24,7 +35,7 @@ export default function ListingsPage() {
   const fetchListings = async () => {
     try {
       setIsLoading(true);
-      const data = await get<Listing[]>(`/listings/?page=${page}`);
+      const data = await get<Listing[]>(`/listings/pending/?page=${page}`);
       setListings(data);
     } catch (error) {
       toast({
@@ -34,6 +45,50 @@ export default function ListingsPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleApprove = (listingId: string) => {
+    setConfirmDialog({ open: true, action: 'approve', listingId });
+  };
+
+  const handleReject = (listingId: string) => {
+    setConfirmDialog({ open: true, action: 'reject', listingId });
+  };
+
+  const processListing = async () => {
+    if (!confirmDialog.listingId || !confirmDialog.action) return;
+
+    setIsProcessing(true);
+    try {
+      const newStatus = confirmDialog.action === 'approve' ? 'active' : 'inactive';
+      await updateListingStatus(confirmDialog.listingId, newStatus);
+
+      setListings(prev =>
+        prev.map(listing =>
+          listing.id === confirmDialog.listingId
+            ? {
+                ...listing,
+                status: newStatus,
+              }
+            : listing
+        )
+      );
+
+      toast({
+        title: 'Success',
+        description: `Listing ${confirmDialog.action === 'approve' ? 'approved' : 'rejected'} successfully`,
+      });
+
+      setConfirmDialog({ open: false, action: null, listingId: null });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to ${confirmDialog.action} listing`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -76,8 +131,8 @@ export default function ListingsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Listings</h1>
-          <p className="text-gray-600 mt-1">Manage all property listings</p>
+          <h1 className="text-3xl font-bold text-gray-900">Pending Listings</h1>
+          <p className="text-gray-600 mt-1">Review and approve property listings</p>
         </div>
 
         <Tabs defaultValue="all" onValueChange={(val) => setStatusFilter(val as any)}>
@@ -100,6 +155,17 @@ export default function ListingsPage() {
               data={filteredListings}
               isLoading={isLoading}
               emptyMessage="No listings found"
+              actions={[
+                {
+                  label: 'Approve',
+                  onClick: (item) => handleApprove(item.id),
+                },
+                {
+                  label: 'Reject',
+                  onClick: (item) => handleReject(item.id),
+                  className: 'text-red-600 hover:text-red-700',
+                },
+              ]}
               pagination={{
                 current: page,
                 total: Math.ceil(listings.length / 10),
@@ -108,6 +174,21 @@ export default function ListingsPage() {
             />
           </TabsContent>
         </Tabs>
+
+        <ConfirmationDialog
+          open={confirmDialog.open}
+          title="Confirm Listing Action"
+          description={
+            confirmDialog.action === 'approve'
+              ? 'Approve this listing? It will be published and visible to users.'
+              : 'Reject this listing? The owner will be notified.'
+          }
+          actionLabel={confirmDialog.action === 'approve' ? 'Approve' : 'Reject'}
+          isDestructive={confirmDialog.action === 'reject'}
+          onConfirm={processListing}
+          onCancel={() => setConfirmDialog({ open: false, action: null, listingId: null })}
+          isLoading={isProcessing}
+        />
       </div>
     </DashboardLayout>
   );
