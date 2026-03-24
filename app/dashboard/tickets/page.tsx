@@ -4,18 +4,29 @@ import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { DataTable, Column } from '@/components/data-table';
 import { StatusBadge } from '@/components/status-badge';
+import { ConfirmationDialog } from '@/components/confirmation-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Ticket } from '@/lib/types';
-import { get } from '@/lib/api';
-import { formatDate, truncate, getStatusColor } from '@/lib/format';
+import { get, markTicketUsed, expireTicket, validateTicket } from '@/lib/api';
+import { formatDate, formatCurrency, truncate } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TicketsPage() {
   const { toast } = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'in-progress' | 'resolved' | 'closed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'valid' | 'used' | 'expired'>('all');
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    action: 'use' | 'expire' | 'validate' | null;
+    ticketId: string | null;
+  }>({
+    open: false,
+    action: null,
+    ticketId: null,
+  });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     fetchTickets();
@@ -37,34 +48,104 @@ export default function TicketsPage() {
     }
   };
 
+  const handleMarkUsed = (ticketId: string) => {
+    setConfirmDialog({ open: true, action: 'use', ticketId });
+  };
+
+  const handleExpire = (ticketId: string) => {
+    setConfirmDialog({ open: true, action: 'expire', ticketId });
+  };
+
+  const handleValidate = (ticketId: string) => {
+    setConfirmDialog({ open: true, action: 'validate', ticketId });
+  };
+
+  const processTicketAction = async () => {
+    if (!confirmDialog.ticketId || !confirmDialog.action) return;
+
+    setIsProcessing(true);
+    try {
+      let actionFn;
+      let actionLabel;
+
+      switch (confirmDialog.action) {
+        case 'use':
+          actionFn = markTicketUsed;
+          actionLabel = 'marked as used';
+          break;
+        case 'expire':
+          actionFn = expireTicket;
+          actionLabel = 'expired';
+          break;
+        case 'validate':
+          actionFn = validateTicket;
+          actionLabel = 'validated';
+          break;
+        default:
+          return;
+      }
+
+      await actionFn(confirmDialog.ticketId);
+
+      setTickets(prev =>
+        prev.map(ticket =>
+          ticket.id === confirmDialog.ticketId
+            ? {
+                ...ticket,
+                status: confirmDialog.action === 'use' ? 'used' : confirmDialog.action === 'expire' ? 'expired' : 'valid',
+                usedAt: confirmDialog.action === 'use' ? new Date().toISOString() : ticket.usedAt,
+                canBeUsed: confirmDialog.action === 'expire' ? false : confirmDialog.action === 'validate' ? true : ticket.canBeUsed,
+              }
+            : ticket
+        )
+      );
+
+      toast({
+        title: 'Success',
+        description: `Ticket ${actionLabel} successfully`,
+      });
+
+      setConfirmDialog({ open: false, action: null, ticketId: null });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to update ticket status`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const filteredTickets = tickets.filter(
     ticket => statusFilter === 'all' || ticket.status === statusFilter
   );
 
-  const getPriorityColor = (priority: string) => {
-    const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      low: 'outline',
-      medium: 'secondary',
-      high: 'destructive',
-      critical: 'destructive',
-    };
-    return colors[priority] || 'outline';
-  };
-
   const columns: Column<Ticket>[] = [
     {
-      key: 'title',
-      label: 'Title',
-      render: (title) => truncate(title, 40),
+      key: 'ticketNumber',
+      label: 'Ticket Number',
+      render: (number) => truncate(number, 20),
     },
     {
-      key: 'priority',
-      label: 'Priority',
-      render: (priority) => (
-        <Badge variant={getPriorityColor(priority)}>
-          {priority.charAt(0).toUpperCase() + priority.slice(1)}
-        </Badge>
-      ),
+      key: 'firstName',
+      label: 'Name',
+      render: (_, item) => `${item.firstName} ${item.lastName}`,
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      render: (email) => truncate(email, 30),
+    },
+    {
+      key: 'ticketType',
+      label: 'Ticket Type',
+      render: (ticketType) => ticketType.name,
+    },
+    {
+      key: 'price',
+      label: 'Price',
+      render: (price, item) => formatCurrency(price, item.ticketType.currency),
     },
     {
       key: 'status',
@@ -82,24 +163,21 @@ export default function TicketsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Support Tickets</h1>
-          <p className="text-gray-600 mt-1">Manage customer support tickets</p>
+          <h1 className="text-3xl font-bold text-gray-900">Event Tickets</h1>
+          <p className="text-gray-600 mt-1">Manage event ticket validations and states</p>
         </div>
 
         <Tabs defaultValue="all" onValueChange={(val) => setStatusFilter(val as any)}>
           <TabsList>
             <TabsTrigger value="all">All ({tickets.length})</TabsTrigger>
-            <TabsTrigger value="open">
-              Open ({tickets.filter(t => t.status === 'open').length})
+            <TabsTrigger value="valid">
+              Valid ({tickets.filter(t => t.status === 'valid').length})
             </TabsTrigger>
-            <TabsTrigger value="in-progress">
-              In Progress ({tickets.filter(t => t.status === 'in-progress').length})
+            <TabsTrigger value="used">
+              Used ({tickets.filter(t => t.status === 'used').length})
             </TabsTrigger>
-            <TabsTrigger value="resolved">
-              Resolved ({tickets.filter(t => t.status === 'resolved').length})
-            </TabsTrigger>
-            <TabsTrigger value="closed">
-              Closed ({tickets.filter(t => t.status === 'closed').length})
+            <TabsTrigger value="expired">
+              Expired ({tickets.filter(t => t.status === 'expired').length})
             </TabsTrigger>
           </TabsList>
 
@@ -109,9 +187,47 @@ export default function TicketsPage() {
               data={filteredTickets}
               isLoading={isLoading}
               emptyMessage="No tickets found"
+              actions={
+                statusFilter === 'valid'
+                  ? [
+                      {
+                        label: 'Mark Used',
+                        onClick: (item) => handleMarkUsed(item.id),
+                      },
+                      {
+                        label: 'Expire',
+                        onClick: (item) => handleExpire(item.id),
+                        className: 'text-orange-600 hover:text-orange-700',
+                      },
+                    ]
+                  : statusFilter === 'expired'
+                  ? [
+                      {
+                        label: 'Validate',
+                        onClick: (item) => handleValidate(item.id),
+                      },
+                    ]
+                  : undefined
+              }
             />
           </TabsContent>
         </Tabs>
+
+        <ConfirmationDialog
+          open={confirmDialog.open}
+          title="Confirm Ticket Action"
+          description={
+            confirmDialog.action === 'use'
+              ? 'Mark this ticket as used?'
+              : confirmDialog.action === 'expire'
+              ? 'Expire this ticket?'
+              : 'Validate this ticket?'
+          }
+          actionLabel={confirmDialog.action === 'use' ? 'Mark Used' : confirmDialog.action === 'expire' ? 'Expire' : 'Validate'}
+          onConfirm={processTicketAction}
+          onCancel={() => setConfirmDialog({ open: false, action: null, ticketId: null })}
+          isLoading={isProcessing}
+        />
       </div>
     </DashboardLayout>
   );
