@@ -251,3 +251,63 @@ export async function validateTicket<T = unknown>(ticketId: string): Promise<T> 
 export async function updateListingStatus<T = unknown>(listingId: string, status: string): Promise<T> {
   return patch<T>(`/listings/${listingId}/`, { status });
 }
+
+// User management
+export interface ListUsersParams {
+  page?: number;
+  page_size?: number;
+  role?: 'guest' | 'host' | 'admin';
+  status?: 'active' | 'inactive';
+  verified?: 'email' | 'phone';
+  search?: string;
+}
+
+export async function listUsers<T = unknown>(params?: ListUsersParams): Promise<T> {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+  if (params?.role) queryParams.append('role', params.role);
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.verified) queryParams.append('verified', params.verified);
+  if (params?.search) queryParams.append('search', params.search);
+  
+  const query = queryParams.toString();
+  return get<T>(`/admin/users/${query ? '?' + query : ''}`);
+}
+
+export async function getUserDetails<T = unknown>(userId: number): Promise<T> {
+  return get<T>(`/admin/users/${userId}/`);
+}
+
+export async function updateUser<T = unknown>(
+  userId: number,
+  data: {
+    role?: 'guest' | 'host' | 'admin';
+    is_active?: boolean;
+    is_staff?: boolean;
+    is_email_verified?: boolean;
+    is_phone_verified?: boolean;
+  }
+): Promise<T> {
+  return patch<T>(`/admin/users/${userId}/`, data);
+}
+
+export async function banUser<T = unknown>(userId: number, reason?: string): Promise<T> {
+  return post<T>(`/admin/users/${userId}/ban_user/`, { reason });
+}
+
+export async function unbanUser<T = unknown>(userId: number): Promise<T> {
+  return post<T>(`/admin/users/${userId}/unban_user/`);
+}
+
+export async function promoteToHost<T = unknown>(userId: number): Promise<T> {
+  return post<T>(`/admin/users/${userId}/promote_to_host/`);
+}
+
+export async function demoteToGuest<T = unknown>(userId: number): Promise<T> {
+  return post<T>(`/admin/users/${userId}/demote_to_guest/`);
+}
+
+export async function getUserStats<T = unknown>(): Promise<T> {
+  return get<T>(`/admin/users/stats/`);
+}

@@ -17,6 +17,47 @@ export interface User {
   createdAt: string;
 }
 
+// Admin User Type (for user management endpoints)
+export interface AdminUser {
+  id: number;
+  email: string;
+  phone: string | null;
+  username: string | null;
+  profile_picture: string | null;
+  role: 'guest' | 'host' | 'admin';
+  is_active: boolean;
+  is_staff: boolean;
+  is_superuser: boolean;
+  is_email_verified: boolean;
+  is_phone_verified: boolean;
+  rating: number;
+  rating_count: number;
+  created_at: string;
+  updated_at: string;
+  last_login: string | null;
+}
+
+export interface AdminUserStats {
+  total_users: number;
+  active_users: number;
+  inactive_users: number;
+  by_role: {
+    guest: number;
+    host: number;
+    admin: number;
+  };
+  email_verified: number;
+  phone_verified: number;
+  timestamp: string;
+}
+
+export interface AdminUsersResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AdminUser[];
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;

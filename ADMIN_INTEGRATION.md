@@ -303,7 +303,279 @@ is_superuser: true
 
 
 
+## User Management
+
+### List All Users
+**GET** `/admin/users/`
+- **Permission**: `IsAdmin` (requires `role: "admin"`)
+- **Public**: No
+- **Pagination**: Yes (default 50 per page)
+- **Description**: Get paginated list of all users with filtering and search capabilities
+
+**Query Parameters:**
+- `page` - Page number (1-indexed)
+- `page_size` - Number of results to return per page
+- `role` - Filter by role: "guest", "host", "admin"
+- `status` - Filter by status: "active", "inactive"
+- `verified` - Filter by verification: "email", "phone"
+- `search` - Search by email, username, or phone
+
+**Response:** `200 OK`
+```json
+{
+  "count": 422,
+  "next": "https://app.alpha.openscaler.net/api/v1/admin/users/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "id": 96,
+      "email": "user@example.com",
+      "phone": "+213675706769",
+      "username": "user_123",
+      "profile_picture": "https://api.dicebear.com/7.x/avataaars/svg?seed=user_123",
+      "role": "guest",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false,
+      "is_email_verified": true,
+      "is_phone_verified": false,
+      "rating": 4.3,
+      "rating_count": 30,
+      "created_at": "2026-03-25T14:25:55.471609Z",
+      "updated_at": "2026-03-24T14:26:11.847742Z",
+      "last_login": null
+    },
+    {
+      "id": 412,
+      "email": "host@example.com",
+      "phone": "+213538339789",
+      "username": "host_user",
+      "profile_picture": "https://api.dicebear.com/7.x/avataaars/svg?seed=host_user",
+      "role": "host",
+      "is_active": true,
+      "is_staff": false,
+      "is_superuser": false,
+      "is_email_verified": true,
+      "is_phone_verified": false,
+      "rating": 4.1,
+      "rating_count": 48,
+      "created_at": "2026-03-25T14:25:55.471609Z",
+      "updated_at": "2026-03-24T14:27:16.347460Z",
+      "last_login": null
+    },
+    {
+      "id": 8,
+      "email": "admin@kerya.com",
+      "phone": null,
+      "username": "kerya_admin",
+      "profile_picture": "https://api.dicebear.com/7.x/avataaars/svg?seed=kerya_admin",
+      "role": "admin",
+      "is_active": true,
+      "is_staff": true,
+      "is_superuser": true,
+      "is_email_verified": false,
+      "is_phone_verified": false,
+      "rating": 0,
+      "rating_count": 0,
+      "created_at": "2026-03-24T14:25:55.585168Z",
+      "updated_at": "2026-03-24T14:25:55.620984Z",
+      "last_login": null
+    }
+  ]
+}
+```
+
+**Response Model:**
+
+Each user object contains:
+- `id` - Integer ID of the user
+- `email` - Email address (max 254 chars)
+- `phone` - Phone number (max 128 chars, nullable)
+- `username` - Username (max 150 chars, nullable)
+- `profile_picture` - Profile picture URL (max 200 chars, nullable)
+- `role` - User role: "guest", "host", or "admin"
+- `is_active` - Whether user account is active
+- `is_staff` - Django staff flag
+- `is_superuser` - Superuser status flag
+- `is_email_verified` - Whether email is verified
+- `is_phone_verified` - Whether phone is verified
+- `rating` - User rating (decimal, read-only)
+- `rating_count` - Number of ratings (read-only)
+- `created_at` - Account creation timestamp
+- `updated_at` - Last account update timestamp
+- `last_login` - Last login timestamp (nullable)
+
+### Get User Details
+**GET** `/admin/users/{id}/`
+- **Permission**: `IsAdmin`
+- **Public**: No
+
+**Response:** `200 OK`
+```json
+{
+  "id": 412,
+  "email": "host@example.com",
+  "phone": "+213538339789",
+  "username": "host_user",
+  "profile_picture": "https://api.dicebear.com/7.x/avataaars/svg?seed=host_user",
+  "role": "host",
+  "is_active": true,
+  "is_staff": false,
+  "is_superuser": false,
+  "is_email_verified": true,
+  "is_phone_verified": true,
+  "rating": 4.8,
+  "rating_count": 45,
+  "created_at": "2026-03-15T08:00:00Z",
+  "updated_at": "2026-03-24T10:00:00Z",
+  "last_login": "2026-03-24T14:45:00Z"
+}
+```
+
+### Update User Information
+**PATCH** `/admin/users/{id}/`
+- **Permission**: `IsAdmin`
+- **Public**: No
+- **Allowed Fields**: `role`, `is_active`, `is_staff`, `is_email_verified`, `is_phone_verified`
+
+**Request:**
+```json
+{
+  "role": "host",
+  "is_active": true,
+  "is_email_verified": true
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "role": "host",
+  "is_active": true,
+  "updated_at": "2026-03-24T16:00:00Z"
+}
+```
+
+### Ban User
+**POST** `/admin/users/{id}/ban_user/`
+- **Permission**: `IsAdmin`
+- **Public**: No
+- **Effect**: Deactivates user account, prevents login
+
+**Request:**
+```json
+{
+  "reason": "Violation of terms of service"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "status": "user_banned",
+  "message": "User user@example.com has been banned",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "is_active": false
+  }
+}
+```
+
+### Unban User
+**POST** `/admin/users/{id}/unban_user/`
+- **Permission**: `IsAdmin`
+- **Public**: No
+- **Effect**: Reactivates a previously banned user account
+
+**Response:** `200 OK`
+```json
+{
+  "status": "user_unbanned",
+  "message": "User user@example.com has been reactivated",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "is_active": true
+  }
+}
+```
+
+### Promote User to Host
+**POST** `/admin/users/{id}/promote_to_host/`
+- **Permission**: `IsAdmin`
+- **Public**: No
+- **Effect**: Changes user role from "guest" to "host"
+
+**Response:** `200 OK`
+```json
+{
+  "status": "promoted_to_host",
+  "message": "User user@example.com has been promoted to host",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "username": "user_123",
+    "role": "host"
+  }
+}
+```
+
+### Demote Host to Guest
+**POST** `/admin/users/{id}/demote_to_guest/`
+- **Permission**: `IsAdmin`
+- **Public**: No
+- **Effect**: Changes user role from "host" to "guest"
+
+**Response:** `200 OK`
+```json
+{
+  "status": "demoted_to_guest",
+  "message": "User user@example.com has been demoted to guest",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "username": "user_123",
+    "role": "guest"
+  }
+}
+```
+
+### Get User Statistics
+**GET** `/admin/users/stats/`
+- **Permission**: `IsAdmin`
+- **Public**: No
+- **Description**: Get overview of user distribution and status
+
+**Response:** `200 OK`
+```json
+{
+  "total_users": 1500,
+  "active_users": 1475,
+  "inactive_users": 25,
+  "by_role": {
+    "guest": 1200,
+    "host": 285,
+    "admin": 15
+  },
+  "email_verified": 1350,
+  "phone_verified": 1200,
+  "timestamp": "2026-03-24T16:30:00Z"
+}
+```
+
+---
+
 ## Budget Posts Management
+
+### Get Budget Posts Activity
+**GET** `/budget-posts/`
+- **Permission**: Public (but returnable for logged-in admins)
+- **Public**: Yes
+
+---
 
 ## Django Admin Interface
 
@@ -316,6 +588,7 @@ is_superuser: true
 - User Management
 - List all users, filter by role, edit user details
 - Modify user permissions and staff status
+
 
 ---
 

@@ -4,16 +4,17 @@ import { useEffect, useState } from 'react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { DataTable, Column } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
-import { User } from '@/lib/types';
-import { get } from '@/lib/api';
+import { AdminUser, AdminUsersResponse } from '@/lib/types';
+import { listUsers } from '@/lib/api';
 import { formatDate, formatPhoneNumber, capitalize } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
 
 export default function UsersPage() {
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchUsers();
@@ -22,8 +23,9 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const data = await get<User[]>(`/users/?page=${page}`);
-      setUsers(data);
+      const response = await listUsers<AdminUsersResponse>({ page, page_size: 50 });
+      setUsers(response.results);
+      setTotalPages(Math.ceil(response.count / 50));
     } catch (error) {
       toast({
         title: 'Error',
@@ -38,18 +40,17 @@ export default function UsersPage() {
   const getRoleColor = (role: string) => {
     const colors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       admin: 'default',
-      moderator: 'secondary',
-      support: 'outline',
-      analyst: 'outline',
+      host: 'secondary',
+      guest: 'outline',
     };
     return colors[role] || 'outline';
   };
 
-  const columns: Column<User>[] = [
+  const columns: Column<AdminUser>[] = [
     {
-      key: 'firstName',
-      label: 'Name',
-      render: (_, item) => `${item.firstName} ${item.lastName}`,
+      key: 'username',
+      label: 'Username',
+      render: (username) => username || '—',
     },
     {
       key: 'email',
@@ -58,7 +59,7 @@ export default function UsersPage() {
     {
       key: 'phone',
       label: 'Phone',
-      render: (phone) => formatPhoneNumber(phone),
+      render: (phone) => (phone ? formatPhoneNumber(phone) : '—'),
     },
     {
       key: 'role',
@@ -70,7 +71,21 @@ export default function UsersPage() {
       ),
     },
     {
-      key: 'createdAt',
+      key: 'is_active',
+      label: 'Status',
+      render: (is_active) => (
+        <Badge variant={is_active ? 'default' : 'destructive'}>
+          {is_active ? 'Active' : 'Inactive'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'rating',
+      label: 'Rating',
+      render: (rating) => `${rating}/5 (${(rating || 0).toFixed(1)})`,
+    },
+    {
+      key: 'created_at',
       label: 'Joined',
       render: (date) => formatDate(date),
     },
@@ -81,7 +96,7 @@ export default function UsersPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-          <p className="text-gray-600 mt-1">Manage admin team members</p>
+          <p className="text-gray-600 mt-1">Manage platform users (guests, hosts, admins)</p>
         </div>
 
         <DataTable
@@ -91,7 +106,7 @@ export default function UsersPage() {
           emptyMessage="No users found"
           pagination={{
             current: page,
-            total: Math.ceil(users.length / 10),
+            total: totalPages,
             onChange: setPage,
           }}
         />
