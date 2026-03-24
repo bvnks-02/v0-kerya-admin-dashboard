@@ -1,6 +1,6 @@
 import { ApiResponse, AuthTokens } from './types';
 
-const API_BASE_URL = 'https://app.alpha.openscaler.net:9281/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://app.alpha.openscaler.net:9281/api/v1';
 
 // Token management
 let accessToken: string | null = null;
@@ -50,10 +50,41 @@ export function getRefreshToken(): string | null {
   return refreshToken;
 }
 
-// Token refresh
+// Helper to check if error is due to token expiry
+function isTokenExpiredError(responseData: any): boolean {
+  if (!responseData) return false;
+  
+  // Check for token_not_valid code
+  if (responseData.code === 'token_not_valid') {
+    return true;
+  }
+  
+  // Check for messages array with token expiry message
+  if (Array.isArray(responseData.messages)) {
+    return responseData.messages.some((msg: any) => 
+      msg.message === 'Token is expired' || msg.message?.includes('expired')
+    );
+  }
+  
+  return false;
+}
+
+// Helper to redirect to login when session expires
+function redirectToLogin() {
+  clearTokens();
+  if (typeof window !== 'undefined') {
+    // Use window.location for a full page redirect to ensure middleware processes it
+    window.location.href = '/login?session=expired';
+  }
+}
+
+// Token refresh with better error handling
 async function refreshAccessToken(): Promise<boolean> {
   const token = getRefreshToken();
-  if (!token) return false;
+  if (!token) {
+    redirectToLogin();
+    return false;
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
@@ -64,15 +95,25 @@ async function refreshAccessToken(): Promise<boolean> {
       },
     });
 
-    if (!response.ok) return false;
+    if (!response.ok) {
+      console.log('[v0] Token refresh failed. Redirecting to login.');
+      redirectToLogin();
+      return false;
+    }
 
     const data = (await response.json()) as ApiResponse<AuthTokens>;
     if (data.data) {
       setTokens(data.data);
+      console.log('[v0] Token refreshed successfully');
       return true;
     }
+    
+    console.log('[v0] Token refresh returned invalid data. Redirecting to login.');
+    redirectToLogin();
     return false;
-  } catch {
+  } catch (error) {
+    console.log('[v0] Token refresh error:', error);
+    redirectToLogin();
     return false;
   }
 }
@@ -84,7 +125,8 @@ interface FetchOptions extends RequestInit {
 
 export async function apiCall<T = unknown>(
   endpoint: string,
-  options: FetchOptions = {}
+  options: FetchOptions = {},
+  retries = 1
 ): Promise<T> {
   const { skipAuth = false, ...fetchOptions } = options;
   const url = `${API_BASE_URL}${endpoint}`;
@@ -108,30 +150,38 @@ export async function apiCall<T = unknown>(
 
   console.log('[v0] API Response:', { endpoint, status: response.status });
 
-  // Handle 401 by refreshing token and retrying once
-  if (response.status === 401 && !skipAuth) {
-    console.log('[v0] Got 401, attempting token refresh');
+  const responseData = (await response.json()) as ApiResponse<T> | T;
+
+  // Handle 401 (Unauthorized) or token expiry errors
+  if ((response.status === 401 || isTokenExpiredError(responseData)) && !skipAuth && retries > 0) {
+    console.log('[v0] Token expired or unauthorized. Attempting refresh...');
+    
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       const newToken = getAccessToken();
       if (newToken) {
         headers.set('Authorization', `Bearer ${newToken}`);
-        response = await fetch(url, {
-          ...fetchOptions,
-          headers,
-        });
-        console.log('[v0] Retry after refresh:', { status: response.status });
+        // Retry the request with the new token
+        console.log('[v0] Retrying request with new token');
+        return apiCall<T>(endpoint, options, retries - 1);
       }
     }
+    // If refresh failed, redirectToLogin was already called, so just throw
   }
-
-  const responseData = (await response.json()) as ApiResponse<T> | T;
 
   if (!response.ok) {
     console.log('[v0] API Error:', { status: response.status, responseData });
-    const errorMessage = typeof responseData === 'object' && responseData !== null && 'message' in responseData 
-      ? (responseData as any).message 
-      : 'API request failed';
+    
+    // Extract error message with fallback to detail field
+    let errorMessage = 'API request failed';
+    if (typeof responseData === 'object' && responseData !== null) {
+      if ('detail' in responseData) {
+        errorMessage = (responseData as any).detail;
+      } else if ('message' in responseData) {
+        errorMessage = (responseData as any).message;
+      }
+    }
+    
     const error = new Error(errorMessage);
     (error as any).status = response.status;
     (error as any).data = responseData;
@@ -182,4 +232,22 @@ export async function deleteRequest<T = unknown>(
     ...options,
     method: 'DELETE',
   });
+}
+
+// Ticket management
+export async function markTicketUsed<T = unknown>(ticketId: string): Promise<T> {
+  return patch<T>(`/tickets/${ticketId}/set-state/?state=used`);
+}
+
+export async function expireTicket<T = unknown>(ticketId: string): Promise<T> {
+  return patch<T>(`/tickets/${ticketId}/set-state/?state=expired`);
+}
+
+export async function validateTicket<T = unknown>(ticketId: string): Promise<T> {
+  return patch<T>(`/tickets/${ticketId}/set-state/?state=valid`);
+}
+
+// Listing management
+export async function updateListingStatus<T = unknown>(listingId: string, status: string): Promise<T> {
+  return patch<T>(`/listings/${listingId}/`, { status });
 }
