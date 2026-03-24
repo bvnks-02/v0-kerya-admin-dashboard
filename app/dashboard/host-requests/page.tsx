@@ -21,7 +21,7 @@ export default function HostRequestsPage() {
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     action: 'approve' | 'reject' | null;
-    requestId: string | null;
+    requestId: number | null;
   }>({
     open: false,
     action: null,
@@ -49,11 +49,11 @@ export default function HostRequestsPage() {
     }
   };
 
-  const handleApprove = async (requestId: string) => {
+  const handleApprove = async (requestId: number) => {
     setConfirmDialog({ open: true, action: 'approve', requestId });
   };
 
-  const handleReject = async (requestId: string) => {
+  const handleReject = async (requestId: number) => {
     setConfirmDialog({ open: true, action: 'reject', requestId });
   };
 
